@@ -1,0 +1,8 @@
+# Sample Reelgood URLs for batch processing
+# Lines starting with # are comments and will be ignored
+# Add one URL per line
+
+https://reelgood.com/movie/inception-2010
+https://reelgood.com/movie/the-matrix-1999
+https://reelgood.com/show/breaking-bad-2008
+https://reelgood.com/show/stranger-things

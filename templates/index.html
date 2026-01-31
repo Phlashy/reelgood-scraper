@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Availability Checker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+
+        .header-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.3);
+        }
+
+        .header-image svg {
+            width: 70px;
+            height: 70px;
+            fill: #1a1a2e;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 20px;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00d9ff;
+        }
+
+        input[type="text"]::placeholder {
+            color: #666;
+        }
+
+        button {
+            padding: 16px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d9ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .title-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .title-section .source {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .title-section .source a {
+            color: #00d9ff;
+            text-decoration: none;
+        }
+
+        .copy-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .summary-section {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            text-align: center;
+        }
+
+        .summary-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .summary-regions {
+            font-size: 1.1rem;
+            color: #00ff88;
+            font-weight: 500;
+        }
+
+        .summary-regions .region-count {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 217, 255, 0.1);
+            font-weight: 600;
+            color: #00d9ff;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .platform-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .platform-tag {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .no-platforms {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .copy-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #00ff88;
+            color: #1a1a2e;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .copy-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            th, td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-image">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+                </svg>
+            </div>
+            <h1>Streaming Availability Checker</h1>
+            <p class="subtitle">Find where to stream movies & TV shows across different regions</p>
+        </header>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="url-input" placeholder="Paste a Reelgood URL (e.g., https://reelgood.com/movie/thunder-road-2018)">
+                <button class="btn-primary" id="check-btn" onclick="checkAvailability()">Check Availability</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Checking streaming availability across all regions...</p>
+            <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 15-30 seconds</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="results-card">
+                <div class="results-header">
+                    <div class="title-section">
+                        <h2 id="result-title"></h2>
+                        <p class="source">Source: <a id="result-url" href="#" target="_blank"></a></p>
+                    </div>
+                    <div class="copy-buttons">
+                        <button class="btn-secondary" onclick="copyText()">Copy Text</button>
+                        <button class="btn-secondary" onclick="copyTable()">Copy Table</button>
+                        <button class="btn-secondary" onclick="copyAll()">Copy All</button>
+                    </div>
+                </div>
+
+                <div class="summary-section" id="summary-section">
+                    <div class="summary-icon">🎬</div>
+                    <div class="summary-title" id="summary-title"></div>
+                    <div class="summary-regions" id="summary-regions"></div>
+                </div>
+
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>Region</th>
+                            <th>Streaming Platforms (Subscription/Free)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="copy-toast" id="toast">Copied to clipboard!</div>
+
+    <footer>
+        <p>Data sourced from <a href="https://reelgood.com" target="_blank" style="color: #00d9ff;">Reelgood</a> | Only shows subscription and free streaming options</p>
+    </footer>
+
+    <script>
+        let currentData = null;
+
+        async function checkAvailability() {
+            const url = document.getElementById('url-input').value.trim();
+
+            if (!url) {
+                showError('Please enter a Reelgood URL');
+                return;
+            }
+
+            // Show loading, hide results and error
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            document.getElementById('check-btn').disabled = true;
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Something went wrong');
+                }
+
+                currentData = data;
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('check-btn').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Set title and URL
+            document.getElementById('result-title').textContent = data.title;
+            document.getElementById('result-url').textContent = data.url;
+            document.getElementById('result-url').href = data.url;
+
+            // Generate summary display
+            const availableRegions = data.regions.filter(r => r.platform_count > 0);
+            document.getElementById('summary-title').textContent = data.title;
+            document.getElementById('summary-regions').innerHTML = generateSummaryHTML(availableRegions);
+
+            // Populate table
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            data.regions.forEach(region => {
+                const row = document.createElement('tr');
+
+                const regionCell = document.createElement('td');
+                regionCell.textContent = region.name;
+
+                const platformsCell = document.createElement('td');
+
+                if (region.subscription.length > 0 || region.free.length > 0) {
+                    const platformContainer = document.createElement('div');
+
+                    if (region.subscription.length > 0) {
+                        const subSection = document.createElement('div');
+                        subSection.style.marginBottom = region.free.length > 0 ? '8px' : '0';
+                        const subLabel = document.createElement('strong');
+                        subLabel.textContent = 'Subscription: ';
+                        subLabel.style.color = '#00d9ff';
+                        subLabel.style.fontSize = '0.8rem';
+                        subSection.appendChild(subLabel);
+
+                        const subList = document.createElement('div');
+                        subList.className = 'platform-list';
+                        subList.style.display = 'inline-flex';
+                        subList.style.marginLeft = '4px';
+                        region.subscription.forEach(platform => {
+                            const tag = document.createElement('span');
+                            tag.className = 'platform-tag';
+                            tag.textContent = platform;
+                            subList.appendChild(tag);
+                        });
+                        subSection.appendChild(subList);
+                        platformContainer.appendChild(subSection);
+                    }
+
+                    if (region.free.length > 0) {
+                        const freeSection = document.createElement('div');
+                        const freeLabel = document.createElement('strong');
+                        freeLabel.textContent = 'Free: ';
+                        freeLabel.style.color = '#ffcc00';
+                        freeLabel.style.fontSize = '0.8rem';
+                        freeSection.appendChild(freeLabel);
+
+                        const freeList = document.createElement('div');
+                        freeList.className = 'platform-list';
+                        freeList.style.display = 'inline-flex';
+                        freeList.style.marginLeft = '4px';
+                        region.free.forEach(platform => {
+                            const tag = document.createElement('span');
+                            tag.className = 'platform-tag';
+                            tag.style.background = 'rgba(255, 204, 0, 0.15)';
+                            tag.style.color = '#ffcc00';
+                            tag.style.borderColor = 'rgba(255, 204, 0, 0.3)';
+                            tag.textContent = platform;
+                            freeList.appendChild(tag);
+                        });
+                        freeSection.appendChild(freeList);
+                        platformContainer.appendChild(freeSection);
+                    }
+
+                    platformsCell.appendChild(platformContainer);
+                } else {
+                    platformsCell.innerHTML = '<span class="no-platforms">Not available for streaming</span>';
+                }
+
+                row.appendChild(regionCell);
+                row.appendChild(platformsCell);
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function generateSummaryHTML(availableRegions) {
+            if (availableRegions.length === 0) {
+                return `<span style="color: #ff6b6b;">Not currently available for streaming in any checked region</span>`;
+            }
+
+            const regionNames = availableRegions.map(r => r.name);
+            const count = regionNames.length;
+
+            let regionText;
+            if (count === 1) {
+                regionText = regionNames[0];
+            } else if (count === 2) {
+                regionText = `${regionNames[0]} and ${regionNames[1]}`;
+            } else {
+                const lastRegion = regionNames.pop();
+                regionText = `${regionNames.join(', ')}, and ${lastRegion}`;
+            }
+
+            return `Available in <span class="region-count">${count}</span> region${count > 1 ? 's' : ''}: ${regionText}`;
+        }
+
+        function generateSummaryTextForCopy(title, availableRegions) {
+            if (availableRegions.length === 0) {
+                return `"${title}" is not currently available for streaming (subscription or free) in any of the checked regions.`;
+            }
+
+            const regionNames = availableRegions.map(r => r.name);
+
+            if (regionNames.length === 1) {
+                return `"${title}" is available for streaming in ${regionNames[0]}.`;
+            } else if (regionNames.length === 2) {
+                return `"${title}" is available for streaming in ${regionNames[0]} and ${regionNames[1]}.`;
+            } else {
+                const lastRegion = regionNames.pop();
+                return `"${title}" is available for streaming in ${regionNames.join(', ')}, and ${lastRegion}.`;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function copyText() {
+            if (!currentData) return;
+
+            const availableRegions = currentData.regions.filter(r => r.platform_count > 0);
+            const summaryText = generateSummaryTextForCopy(currentData.title, availableRegions);
+            navigator.clipboard.writeText(summaryText).then(() => {
+                showToast('Summary text copied!');
+            });
+        }
+
+        function copyTable() {
+            if (!currentData) return;
+
+            // Create HTML table for rich paste (Word, Google Docs, etc.)
+            let htmlTable = `<table style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-weight: bold;">Region</th>
+                        <th style="border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-weight: bold;">Streaming Platforms</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            currentData.regions.forEach(region => {
+                let platformsHtml = '';
+                if (region.subscription.length > 0 || region.free.length > 0) {
+                    if (region.subscription.length > 0) {
+                        platformsHtml += `<strong>Subscription:</strong> ${region.subscription.join(', ')}`;
+                    }
+                    if (region.free.length > 0) {
+                        if (platformsHtml) platformsHtml += '<br>';
+                        platformsHtml += `<strong>Free:</strong> ${region.free.join(', ')}`;
+                    }
+                } else {
+                    platformsHtml = '<em>Not available</em>';
+                }
+                htmlTable += `
+                    <tr>
+                        <td style="border: 1px solid #ccc; padding: 8px 12px;">${region.name}</td>
+                        <td style="border: 1px solid #ccc; padding: 8px 12px;">${platformsHtml}</td>
+                    </tr>`;
+            });
+
+            htmlTable += '</tbody></table>';
+
+            // Plain text fallback
+            let plainText = 'Region\tStreaming Platforms\n';
+            currentData.regions.forEach(region => {
+                let platformsText = '';
+                if (region.subscription.length > 0 || region.free.length > 0) {
+                    if (region.subscription.length > 0) {
+                        platformsText += `Subscription: ${region.subscription.join(', ')}`;
+                    }
+                    if (region.free.length > 0) {
+                        if (platformsText) platformsText += ' | ';
+                        platformsText += `Free: ${region.free.join(', ')}`;
+                    }
+                } else {
+                    platformsText = 'Not available';
+                }
+                plainText += `${region.name}\t${platformsText}\n`;
+            });
+
+            // Copy both HTML and plain text
+            const blob = new Blob([htmlTable], { type: 'text/html' });
+            const textBlob = new Blob([plainText], { type: 'text/plain' });
+
+            navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': blob,
+                    'text/plain': textBlob
+                })
+            ]).then(() => {
+                showToast('Table copied!');
+            });
+        }
+
+        function copyAll() {
+            if (!currentData) return;
+
+            const availableRegions = currentData.regions.filter(r => r.platform_count > 0);
+            const summaryText = generateSummaryTextForCopy(currentData.title, availableRegions);
+
+            // Create HTML content
+            let htmlContent = `<p style="font-family: Arial, sans-serif; margin-bottom: 16px; font-weight: bold;">${summaryText}</p>`;
+
+            htmlContent += `<table style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-weight: bold;">Region</th>
+                        <th style="border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-weight: bold;">Streaming Platforms</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            currentData.regions.forEach(region => {
+                let platformsHtml = '';
+                if (region.subscription.length > 0 || region.free.length > 0) {
+                    if (region.subscription.length > 0) {
+                        platformsHtml += `<strong>Subscription:</strong> ${region.subscription.join(', ')}`;
+                    }
+                    if (region.free.length > 0) {
+                        if (platformsHtml) platformsHtml += '<br>';
+                        platformsHtml += `<strong>Free:</strong> ${region.free.join(', ')}`;
+                    }
+                } else {
+                    platformsHtml = '<em>Not available</em>';
+                }
+                htmlContent += `
+                    <tr>
+                        <td style="border: 1px solid #ccc; padding: 8px 12px;">${region.name}</td>
+                        <td style="border: 1px solid #ccc; padding: 8px 12px;">${platformsHtml}</td>
+                    </tr>`;
+            });
+
+            htmlContent += '</tbody></table>';
+            htmlContent += `<p style="font-family: Arial, sans-serif; margin-top: 12px; font-size: 12px; color: #666;">Source: <a href="${currentData.url}">${currentData.url}</a></p>`;
+
+            // Plain text fallback
+            let plainText = summaryText + '\n\n';
+            plainText += 'Region\tStreaming Platforms\n';
+            currentData.regions.forEach(region => {
+                let platformsText = '';
+                if (region.subscription.length > 0 || region.free.length > 0) {
+                    if (region.subscription.length > 0) {
+                        platformsText += `Subscription: ${region.subscription.join(', ')}`;
+                    }
+                    if (region.free.length > 0) {
+                        if (platformsText) platformsText += ' | ';
+                        platformsText += `Free: ${region.free.join(', ')}`;
+                    }
+                } else {
+                    platformsText = 'Not available';
+                }
+                plainText += `${region.name}\t${platformsText}\n`;
+            });
+            plainText += `\nSource: ${currentData.url}`;
+
+            // Copy both HTML and plain text
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const textBlob = new Blob([plainText], { type: 'text/plain' });
+
+            navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': blob,
+                    'text/plain': textBlob
+                })
+            ]).then(() => {
+                showToast('All content copied!');
+            });
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('url-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAvailability();
+            }
+        });
+    </script>
+</body>
+</html>
