@@ -28,6 +28,8 @@ EXPOSE 8080
 # Set environment variables
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
+# Increase shared memory for Chromium
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/browsers
 
 # Run the application with gunicorn and extended timeout (300 seconds / 5 minutes)
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "300", "--workers", "1", "--keep-alive", "65", "app:app"]

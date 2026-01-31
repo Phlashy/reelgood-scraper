@@ -24,6 +24,7 @@ Requirements:
 from playwright.sync_api import sync_playwright
 import sys
 import json
+import os
 
 # Available regions (order matches dropdown)
 REGIONS = {
@@ -34,6 +35,23 @@ REGIONS = {
     'au': 'Australia',
     'nz': 'New Zealand',
 }
+
+# Browser launch args for low-memory environments (Docker/Railway)
+BROWSER_ARGS = [
+    '--disable-dev-shm-usage',  # Overcome limited /dev/shm in Docker
+    '--disable-gpu',  # Disable GPU acceleration
+    '--no-sandbox',  # Required for Docker
+    '--disable-setuid-sandbox',
+    '--disable-extensions',  # No extensions needed
+    '--disable-background-networking',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-translate',
+    '--mute-audio',
+    '--hide-scrollbars',
+    '--metrics-recording-only',
+    '--no-first-run',
+]
 
 
 def get_current_region(page):
@@ -208,7 +226,7 @@ def scrape_reelgood(url, region=None):
         dict: Contains title, platforms, region info, and availability details
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=BROWSER_ARGS)
         context = browser.new_context(
             user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             viewport={'width': 1280, 'height': 800}
@@ -271,7 +289,7 @@ def scrape_all_regions(url):
     results = {}
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=BROWSER_ARGS)
         context = browser.new_context(
             user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             viewport={'width': 1280, 'height': 800}
