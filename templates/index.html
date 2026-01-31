@@ -366,8 +366,12 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Checking streaming availability across all regions...</p>
-            <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 15-30 seconds</p>
+            <p id="loading-status">Checking streaming availability across all regions...</p>
+            <p id="loading-region" style="color: #00d9ff; margin-top: 10px; font-size: 1rem; font-weight: 500;"></p>
+            <div id="progress-bar" style="width: 80%; max-width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 15px auto; overflow: hidden;">
+                <div id="progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); border-radius: 3px; transition: width 0.3s;"></div>
+            </div>
+            <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 30-60 seconds</p>
         </div>
 
         <div class="error" id="error"></div>
@@ -413,6 +417,48 @@
 
     <script>
         let currentData = null;
+        let progressInterval = null;
+
+        const regions = [
+            { name: 'United States', flag: '🇺🇸' },
+            { name: 'United Kingdom', flag: '🇬🇧' },
+            { name: 'Canada', flag: '🇨🇦' },
+            { name: 'Australia', flag: '🇦🇺' },
+            { name: 'New Zealand', flag: '🇳🇿' }
+        ];
+
+        function startProgressAnimation() {
+            let step = 0;
+            const totalSteps = regions.length + 1; // +1 for initial "connecting" step
+
+            // Reset progress
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('loading-region').textContent = '';
+            document.getElementById('loading-status').textContent = 'Connecting to Reelgood...';
+
+            progressInterval = setInterval(() => {
+                step++;
+                const progress = Math.min((step / totalSteps) * 100, 95); // Max 95% until complete
+                document.getElementById('progress-fill').style.width = progress + '%';
+
+                if (step <= regions.length) {
+                    const region = regions[step - 1];
+                    document.getElementById('loading-status').textContent = 'Checking streaming availability...';
+                    document.getElementById('loading-region').textContent = `${region.flag} ${region.name}`;
+                } else {
+                    document.getElementById('loading-status').textContent = 'Finishing up...';
+                    document.getElementById('loading-region').textContent = '✨ Compiling results';
+                }
+            }, 6000); // Update every 6 seconds (roughly matches actual scraping time per region)
+        }
+
+        function stopProgressAnimation() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            document.getElementById('progress-fill').style.width = '100%';
+        }
 
         async function checkAvailability() {
             const url = document.getElementById('url-input').value.trim();
@@ -427,6 +473,9 @@
             document.getElementById('results').classList.remove('active');
             document.getElementById('error').classList.remove('active');
             document.getElementById('check-btn').disabled = true;
+
+            // Start progress animation
+            startProgressAnimation();
 
             try {
                 const response = await fetch('/scrape', {
@@ -449,6 +498,7 @@
             } catch (error) {
                 showError(error.message);
             } finally {
+                stopProgressAnimation();
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('check-btn').disabled = false;
             }
