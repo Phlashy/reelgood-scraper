@@ -29,5 +29,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
-# Run the application with gunicorn and extended timeout (120 seconds)
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "120", "--workers", "1", "app:app"]
+# Run the application with gunicorn and extended timeout (300 seconds / 5 minutes)
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "300", "--workers", "1", "--keep-alive", "65", "app:app"]

@@ -5,8 +5,13 @@ Flask backend that serves the scraper functionality via a web interface
 """
 
 import os
+import logging
 from flask import Flask, render_template, request, jsonify
 from reelgood_scraper import scrape_all_regions, REGIONS
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -31,10 +36,15 @@ def scrape():
         return jsonify({'error': 'Please enter a valid Reelgood URL'}), 400
 
     try:
+        logger.info(f"Starting scrape for URL: {url}")
+
         # Scrape all regions
         result = scrape_all_regions(url)
 
+        logger.info(f"Scrape completed for: {url}")
+
         if 'error' in result:
+            logger.error(f"Scrape error: {result['error']}")
             return jsonify({'error': result['error']}), 500
 
         # Format the response
@@ -56,6 +66,7 @@ def scrape():
         return jsonify(response)
 
     except Exception as e:
+        logger.exception(f"Scraping failed with exception: {str(e)}")
         return jsonify({'error': f'Scraping failed: {str(e)}'}), 500
 
 
