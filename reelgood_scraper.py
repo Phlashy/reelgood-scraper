@@ -89,7 +89,7 @@ def select_region(page, target_region):
             return current
 
         dropdown.click()
-        page.wait_for_timeout(300)  # Reduced from 800ms
+        page.wait_for_timeout(500)  # Wait for dropdown to open
 
         # Find the target region option and get its coordinates
         # Options are DIVs with class e3nus5z3
@@ -116,7 +116,7 @@ def select_region(page, target_region):
 
         if menu_item:
             page.mouse.click(menu_item['x'], menu_item['y'])
-            page.wait_for_timeout(800)  # Reduced from 1500ms - content updates quickly
+            page.wait_for_timeout(1200)  # Wait for content to update after region change
             return target_region
 
         # Close dropdown if we couldn't find the option
@@ -236,7 +236,7 @@ def scrape_reelgood(url, region=None):
         try:
             page.goto(url, wait_until='domcontentloaded', timeout=30000)
             page.wait_for_selector('h1', timeout=15000)
-            page.wait_for_timeout(1000)  # Reduced wait time
+            page.wait_for_timeout(1500)  # Wait for page content to load
 
             # Scroll to Where to Watch section
             page.evaluate('''() => {
@@ -248,7 +248,7 @@ def scrape_reelgood(url, region=None):
                     }
                 }
             }''')
-            page.wait_for_timeout(300)  # Reduced wait
+            page.wait_for_timeout(500)  # Wait for scroll
 
             # Select region if specified
             if region and region in REGIONS:
@@ -299,7 +299,7 @@ def scrape_all_regions(url):
         try:
             page.goto(url, wait_until='domcontentloaded', timeout=30000)
             page.wait_for_selector('h1', timeout=15000)
-            page.wait_for_timeout(1000)  # Reduced wait time
+            page.wait_for_timeout(1500)  # Wait for page content to load
 
             # Scroll to Where to Watch section
             page.evaluate('''() => {
@@ -311,7 +311,7 @@ def scrape_all_regions(url):
                     }
                 }
             }''')
-            page.wait_for_timeout(300)  # Reduced wait
+            page.wait_for_timeout(500)  # Wait for scroll
 
             # Get title once
             title = "Unknown Title"
