@@ -371,7 +371,7 @@
             <div id="progress-bar" style="width: 80%; max-width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 15px auto; overflow: hidden;">
                 <div id="progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); border-radius: 3px; transition: width 0.3s;"></div>
             </div>
-            <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 30-60 seconds</p>
+            <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 10-20 seconds</p>
         </div>
 
         <div class="error" id="error"></div>
@@ -449,7 +449,7 @@
                     document.getElementById('loading-status').textContent = 'Finishing up...';
                     document.getElementById('loading-region').textContent = '✨ Compiling results';
                 }
-            }, 6000); // Update every 6 seconds (roughly matches actual scraping time per region)
+            }, 2000); // Update every 2 seconds (matches optimized scraping time per region)
         }
 
         function stopProgressAnimation() {
