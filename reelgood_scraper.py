@@ -135,6 +135,10 @@ def select_region(page, target_region):
 def extract_platforms(page):
     """Extract streaming platforms from the page (Free and Subscription only, no rent/buy)"""
 
+    # First check if there are any service logos on the page at all
+    logo_count = page.evaluate('() => document.querySelectorAll("img[src*=\\"service-logos\\"]").length')
+    print(f"    Found {logo_count} service logos on page")
+
     # Use JavaScript to find platforms and their categories
     platforms_data = page.evaluate('''() => {
         const results = [];
@@ -297,9 +301,19 @@ def scrape_all_regions(url):
         page = context.new_page()
 
         try:
+            print(f"Loading URL: {url}")
             page.goto(url, wait_until='domcontentloaded', timeout=30000)
             page.wait_for_selector('h1', timeout=15000)
             page.wait_for_timeout(1500)  # Wait for page content to load
+
+            # Check if we hit a Cloudflare challenge page
+            page_content = page.content()
+            if 'challenge' in page_content.lower() or 'cloudflare' in page_content.lower():
+                print("WARNING: Cloudflare challenge detected!")
+
+            # Check page title
+            page_title = page.title()
+            print(f"Page title: {page_title}")
 
             # Scroll to Where to Watch section
             page.evaluate('''() => {
