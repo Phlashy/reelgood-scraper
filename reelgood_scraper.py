@@ -371,6 +371,140 @@ def scrape_all_regions(url):
             return {"error": f"Failed to scrape URL: {str(e)}"}
 
 
+def search_reelgood(query, max_results=10):
+    """
+    Search Reelgood for movies and TV shows.
+
+    Args:
+        query: Search query string
+        max_results: Maximum number of results to return (default 10)
+
+    Returns:
+        dict: Contains search results with title, year, type, and URL
+    """
+    import urllib.parse
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=BROWSER_ARGS)
+        context = browser.new_context(
+            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport={'width': 1280, 'height': 800}
+        )
+        page = context.new_page()
+
+        # Apply stealth techniques to avoid bot detection
+        stealth.apply_stealth_sync(page)
+
+        try:
+            # Navigate to search page
+            encoded_query = urllib.parse.quote(query)
+            search_url = f'https://reelgood.com/search?q={encoded_query}'
+
+            print(f"Searching: {search_url}")
+            page.goto(search_url, wait_until='domcontentloaded', timeout=30000)
+            page.wait_for_timeout(2000)  # Wait for search results to load
+
+            # Check for Cloudflare
+            page_title = page.title()
+            if 'just a moment' in page_title.lower():
+                browser.close()
+                return {"error": "Cloudflare challenge detected - search blocked"}
+
+            # Extract search results
+            results = page.evaluate('''(maxResults) => {
+                const results = [];
+                // Find all links and filter for movie/show
+                const links = document.querySelectorAll('a');
+                const seen = new Set();
+
+                for (const link of links) {
+                    if (results.length >= maxResults) break;
+
+                    const href = link.href;
+                    // Only process movie/show links
+                    if (!href.includes('/movie/') && !href.includes('/show/')) continue;
+
+                    // Normalize URL to not include region
+                    let cleanUrl = href.replace(/reelgood\.com\/[a-z]{2}\//, 'reelgood.com/');
+
+                    // Skip duplicates and non-content links
+                    if (seen.has(cleanUrl)) continue;
+                    if (href.includes('/search') || href.includes('/browse')) continue;
+
+                    seen.add(cleanUrl);
+
+                    // Determine type from URL
+                    const isMovie = href.includes('/movie/');
+                    const type = isMovie ? 'movie' : 'show';
+
+                    // Extract title from the visible <p> tag text (avoids CSS noise)
+                    let title = '';
+                    let year = '';
+
+                    // Look for <p> elements inside the link which hold the visible title
+                    const pElements = link.querySelectorAll('p');
+                    if (pElements.length > 0) {
+                        // The first <p> with meaningful text is usually the title
+                        for (const p of pElements) {
+                            const pText = p.textContent.trim();
+                            if (pText.length > 1 && pText.length < 200) {
+                                title = pText;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Fallback: extract title from URL slug
+                    if (!title) {
+                        const slugMatch = cleanUrl.match(/\/(movie|show)\/(.+?)(?:-\d{4})?$/);
+                        if (slugMatch) {
+                            title = slugMatch[2].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        }
+                    }
+
+                    // Extract year from URL
+                    const urlYearMatch = cleanUrl.match(/-(\d{4})$/);
+                    if (urlYearMatch) {
+                        year = urlYearMatch[1];
+                    }
+
+                    // Also check if title contains year in parens
+                    const titleYearMatch = title.match(/\((\d{4})\)/);
+                    if (titleYearMatch) {
+                        year = titleYearMatch[1];
+                        title = title.replace(/\s*\(\d{4}\)\s*/, '').trim();
+                    }
+
+                    // Clean up title
+                    title = title.replace(/Want to See|Seen It/g, '').trim();
+                    title = title.replace(/\s+/g, ' ').trim();
+
+                    if (title && title.length > 1) {
+                        results.push({
+                            title: title,
+                            year: year,
+                            type: type,
+                            url: cleanUrl
+                        });
+                    }
+                }
+
+                return results;
+            }''', max_results)
+
+            browser.close()
+
+            return {
+                "query": query,
+                "results": results,
+                "count": len(results)
+            }
+
+        except Exception as e:
+            browser.close()
+            return {"error": f"Search failed: {str(e)}"}
+
+
 def generate_summary(data, all_regions=False):
     """Generate a human-readable summary from scraped data"""
     if "error" in data:

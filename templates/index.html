@@ -70,6 +70,45 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            color: #00d9ff;
+            border-bottom-color: #00d9ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .input-group {
             display: flex;
             gap: 12px;
@@ -131,6 +170,81 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Search results styles */
+        .search-results {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00d9ff;
+        }
+
+        .search-result-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-result-type {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .search-result-type.show {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .search-result-year {
+            color: #888;
+            margin-left: 8px;
+        }
+
+        .search-result-arrow {
+            color: #00d9ff;
+            font-size: 1.2rem;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
         }
 
         .loading {
@@ -239,6 +353,15 @@
             font-size: 1.3rem;
         }
 
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -342,6 +465,23 @@
             th, td {
                 padding: 12px 8px;
             }
+
+            .tabs {
+                flex-direction: column;
+                border-bottom: none;
+                gap: 8px;
+            }
+
+            .tab-btn {
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                margin-bottom: 0;
+            }
+
+            .tab-btn.active {
+                border-color: #00d9ff;
+                background: rgba(0, 217, 255, 0.1);
+            }
         }
     </style>
 </head>
@@ -358,9 +498,27 @@
         </header>
 
         <div class="input-section">
-            <div class="input-group">
-                <input type="text" id="url-input" placeholder="Paste a Reelgood URL (e.g., https://reelgood.com/movie/thunder-road-2018)">
-                <button class="btn-primary" id="check-btn" onclick="checkAvailability()">Check Availability</button>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('search')">🔍 Search</button>
+                <button class="tab-btn" onclick="switchTab('url')">🔗 Paste URL</button>
+            </div>
+
+            <div id="search-tab" class="tab-content active">
+                <div class="input-group">
+                    <input type="text" id="search-input" placeholder="Search for a movie or TV show...">
+                    <button class="btn-primary" id="search-btn" onclick="performSearch()">Search</button>
+                </div>
+
+                <div class="search-results" id="search-results">
+                    <div class="search-results-list" id="search-results-list"></div>
+                </div>
+            </div>
+
+            <div id="url-tab" class="tab-content">
+                <div class="input-group">
+                    <input type="text" id="url-input" placeholder="Paste a Reelgood URL (e.g., https://reelgood.com/movie/thunder-road-2018)">
+                    <button class="btn-primary" id="check-btn" onclick="checkAvailability()">Check Availability</button>
+                </div>
             </div>
         </div>
 
@@ -374,9 +532,15 @@
             <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">This may take 10-20 seconds</p>
         </div>
 
+        <div class="loading" id="search-loading">
+            <div class="spinner"></div>
+            <p>Searching...</p>
+        </div>
+
         <div class="error" id="error"></div>
 
         <div class="results" id="results">
+            <button class="btn-secondary back-btn" onclick="goBack()">← Back to Search</button>
             <div class="results-card">
                 <div class="results-header">
                     <div class="title-section">
@@ -418,6 +582,7 @@
     <script>
         let currentData = null;
         let progressInterval = null;
+        let lastSearchQuery = '';
 
         const regions = [
             { name: 'United States', flag: '🇺🇸' },
@@ -426,6 +591,109 @@
             { name: 'Australia', flag: '🇦🇺' },
             { name: 'New Zealand', flag: '🇳🇿' }
         ];
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tab === 'search') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('search-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('url-tab').classList.add('active');
+            }
+
+            // Hide any errors
+            document.getElementById('error').classList.remove('active');
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            lastSearchQuery = query;
+
+            // Show loading, hide results
+            document.getElementById('search-loading').classList.add('active');
+            document.getElementById('search-results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            document.getElementById('search-btn').disabled = true;
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Search failed');
+                }
+
+                displaySearchResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('search-loading').classList.remove('active');
+                document.getElementById('search-btn').disabled = false;
+            }
+        }
+
+        function displaySearchResults(data) {
+            const resultsList = document.getElementById('search-results-list');
+            resultsList.innerHTML = '';
+
+            if (data.results.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No results found. Try a different search term.</div>';
+            } else {
+                data.results.forEach(result => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.onclick = () => selectSearchResult(result.url);
+
+                    item.innerHTML = `
+                        <div class="search-result-info">
+                            <span class="search-result-type ${result.type}">${result.type}</span>
+                            <span class="search-result-title">${result.title}</span>
+                            ${result.year ? `<span class="search-result-year">(${result.year})</span>` : ''}
+                        </div>
+                        <span class="search-result-arrow">→</span>
+                    `;
+
+                    resultsList.appendChild(item);
+                });
+            }
+
+            document.getElementById('search-results').classList.add('active');
+        }
+
+        function selectSearchResult(url) {
+            // Set URL in the URL input and check availability
+            document.getElementById('url-input').value = url;
+            checkAvailability(url);
+        }
+
+        function goBack() {
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+
+            // If we came from search, show the search results again
+            if (lastSearchQuery) {
+                switchTab('search');
+                document.getElementById('search-results').classList.add('active');
+            }
+        }
 
         function startProgressAnimation() {
             let step = 0;
@@ -460,8 +728,8 @@
             document.getElementById('progress-fill').style.width = '100%';
         }
 
-        async function checkAvailability() {
-            const url = document.getElementById('url-input').value.trim();
+        async function checkAvailability(urlOverride) {
+            const url = urlOverride || document.getElementById('url-input').value.trim();
 
             if (!url) {
                 showError('Please enter a Reelgood URL');
@@ -472,7 +740,9 @@
             document.getElementById('loading').classList.add('active');
             document.getElementById('results').classList.remove('active');
             document.getElementById('error').classList.remove('active');
+            document.getElementById('search-results').classList.remove('active');
             document.getElementById('check-btn').disabled = true;
+            document.getElementById('search-btn').disabled = true;
 
             // Start progress animation
             startProgressAnimation();
@@ -501,6 +771,7 @@
                 stopProgressAnimation();
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('check-btn').disabled = false;
+                document.getElementById('search-btn').disabled = false;
             }
         }
 
@@ -798,6 +1069,12 @@
         document.getElementById('url-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 checkAvailability();
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
             }
         });
     </script>

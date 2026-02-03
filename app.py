@@ -7,7 +7,7 @@ Flask backend that serves the scraper functionality via a web interface
 import os
 import logging
 from flask import Flask, render_template, request, jsonify
-from reelgood_scraper import scrape_all_regions, REGIONS
+from reelgood_scraper import scrape_all_regions, search_reelgood, REGIONS
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -68,6 +68,34 @@ def scrape():
     except Exception as e:
         logger.exception(f"Scraping failed with exception: {str(e)}")
         return jsonify({'error': f'Scraping failed: {str(e)}'}), 500
+
+
+@app.route('/search', methods=['POST'])
+def search():
+    """API endpoint to search for movies/shows on Reelgood"""
+    data = request.get_json()
+    query = data.get('query', '').strip()
+
+    if not query:
+        return jsonify({'error': 'Please enter a search query'}), 400
+
+    if len(query) < 2:
+        return jsonify({'error': 'Search query must be at least 2 characters'}), 400
+
+    try:
+        logger.info(f"Searching for: {query}")
+        result = search_reelgood(query)
+
+        if 'error' in result:
+            logger.error(f"Search error: {result['error']}")
+            return jsonify({'error': result['error']}), 500
+
+        logger.info(f"Search completed, found {result['count']} results")
+        return jsonify(result)
+
+    except Exception as e:
+        logger.exception(f"Search failed with exception: {str(e)}")
+        return jsonify({'error': f'Search failed: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
