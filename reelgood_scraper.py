@@ -22,9 +22,13 @@ Requirements:
 """
 
 from playwright.sync_api import sync_playwright
+from playwright_stealth import Stealth
 import sys
 import json
 import os
+
+# Create a stealth instance to avoid bot detection
+stealth = Stealth()
 
 # Available regions (order matches dropdown)
 REGIONS = {
@@ -237,6 +241,9 @@ def scrape_reelgood(url, region=None):
         )
         page = context.new_page()
 
+        # Apply stealth techniques to avoid bot detection
+        stealth.apply_stealth_sync(page)
+
         try:
             page.goto(url, wait_until='domcontentloaded', timeout=30000)
             page.wait_for_selector('h1', timeout=15000)
@@ -300,6 +307,9 @@ def scrape_all_regions(url):
         )
         page = context.new_page()
 
+        # Apply stealth techniques to avoid bot detection
+        stealth.apply_stealth_sync(page)
+
         try:
             print(f"Loading URL: {url}")
             page.goto(url, wait_until='domcontentloaded', timeout=30000)
@@ -307,13 +317,10 @@ def scrape_all_regions(url):
             page.wait_for_timeout(1500)  # Wait for page content to load
 
             # Check if we hit a Cloudflare challenge page
-            page_content = page.content()
-            if 'challenge' in page_content.lower() or 'cloudflare' in page_content.lower():
-                print("WARNING: Cloudflare challenge detected!")
-
-            # Check page title
             page_title = page.title()
             print(f"Page title: {page_title}")
+            if 'just a moment' in page_title.lower() or page_title.strip() == '':
+                print("WARNING: Cloudflare challenge detected - page not loaded properly!")
 
             # Scroll to Where to Watch section
             page.evaluate('''() => {
